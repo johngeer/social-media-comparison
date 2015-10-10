@@ -1,16 +1,16 @@
-import json                  # parsing JSON
+import json                  # for parsing JSON
 import requests              # for working with HTTP
 import cytoolz.curried as tz # functional programming library
 import os                    # for using environment variables
-import twitter               # python twitter tools
+import twitter               # for connecting to twitter API, python twitter tools
 import numpy as np           # for matrix math
 import pandas as pd          # for data wrangling
 import sqlalchemy as sqlal   # for connecting to databases
+import unicodecsv as csv     # for saving to CSV in utf-8 by default
+import gzip                  # for compression of CSV output
 import time                  # for simple benchmarks
-import unicodecsv as csv     # for saving to csv in utf-8 by default
-import gzip                  # for compression of csv or json
 import pdb                   # for testing
-# import sqlite3               # for interacting with sqlite databases
+# import sqlite3               # for interacting with SQLite databases
 
 ## Configuration
 STREAM_URLS = {
@@ -25,6 +25,7 @@ TWITTER_CREDENTIALS = {
     "consumer_secret": os.environ['TWITTER_CONSUMER_SECRET']
 }
 
+## Primary functions
 def connect_to_stream(stream_key):
     """Connect to the appropriate stream"""
     if stream_key == "twitter":
@@ -85,6 +86,7 @@ def timed(func):
         print("The {} function took {}".format(func.__name__, time.time() - start_time))
         return result
     return new_func
+
 ## Filter functions
 def is_tweet(given_item):
     """Predicate to check whether a item is a tweet / status update"""
@@ -100,12 +102,14 @@ def is_tweet(given_item):
         return True
     else:
         return False
+
 @tz.curry
 def is_user_lang_tweet(allow_lang_list, given_item):
     """Predicate to check whether the user_lang of the given item is in the 
     given list of allowed languages"""
     user_lang = get_value_if_present_nested(given_item, ['user', 'lang'])
     return user_lang in allow_lang_list
+
 ## Parsing Functions
 def parse_tweet(given_dict):
     """Reorganize the resulting dictionary"""
@@ -135,13 +139,13 @@ def parse_tweet(given_dict):
         'is_reply': gv(['in_reply_to_user_id']) is not None,
         'is_retweet': gv(['retweeted_status']) is not None, 
         'time_zone': gv(['user', 'time_zone'])}
+
 def parse_post(given_dict): #TODO: test
     """Return parsed subset of a post object"""
     def get_tags(given_dict):
         return tz.pipe(
             get_value_if_present_nested(given_dict, ['object', 'tages']),
             tz.filter(lambda x: tz.get_in(['objectType'], x, default=None) == 'tag'),
-            #TODO: use get_in_reordered, when it exists
             tz.map(lambda x: tz.get_in(['displayName'], x, default=None)),
             lambda x: ", ".join(x)
         )
@@ -149,7 +153,6 @@ def parse_post(given_dict): #TODO: test
         return tz.pipe(
             get_value_if_present_nested(given_dict, ['object', 'tages']),
             tz.filter(lambda x: tz.get_in(['objectType'], x, default=None) == 'category'),
-            #TODO: use get_in_reordered, when it exists
             tz.map(lambda x: tz.get_in(['displayName'], x, default=None)),
             lambda x: ", ".join(x)
         )
@@ -166,12 +169,15 @@ def parse_post(given_dict): #TODO: test
         'actor_name': gv(['actor', 'displayName']),
         'actor_id': gv(['actor', 'id']),
         'actor_type': gv(['actor', 'objectType'])}
+
 def parse_comment(given_dict): #TODO
     """Return a somewhat parsed subset of a comment object"""
     pass
+
 def parse_like(given_dict): #TODO
     """Return a somewhat parsed subset of a like object"""
     pass
+
 ## Saving functions
 def save_first(file_name, stream_iterator):
     """Save the first entry in the stream as an example"""
@@ -190,6 +196,7 @@ def save_first(file_name, stream_iterator):
             outfile.write)         # save
     print("Saved {}".format(file_name))
     return True
+
 def save_sqlite(db_engine, stream_iterator):
     """Save the given stream to a SQLite database"""
     stored_stream = []
@@ -201,6 +208,7 @@ def save_sqlite(db_engine, stream_iterator):
             stored_stream = []
             print(num)
     return True
+
 def save_csv_gz(file_name, stream_iterator):
     """Save the given stream to a compressed CSV file
     
@@ -231,13 +239,15 @@ def get_value_if_present(given_dict, key_string):
         return given_dict[key_string]
     else:
         return None
+
 @tz.curry
 def get_value_if_present_nested(given_dict, key_list):
     """Like value_if_present but can handle nesting"""
-    #TODO: replace with: 
+    #TODO: consider replacing with: 
     # tz.get_in(key_list, given_dict, default=None)
     # rename function to: get_in_reordered
     return reduce(get_value_if_present, key_list, given_dict)
+
 def len_or_none(given_item):
     """If it has one, return length, otherwise return None"""
     try: 
