@@ -3,7 +3,11 @@
 # For Development
 find . -name '*.pyc' -delete # remove compiled files
 
-python consumer_wordpress_comments.py &
-python consumer_wordpress_posts.py &
-python consumer_wordpress_likes.py &
-python consumer_tweets.py &
+python consumer_functions.py comments &
+echo $! >> consumers.pid # save the pid's, to make it easier to stop them
+python consumer_functions.py posts &
+echo $! >> consumers.pid
+python consumer_functions.py likes &
+echo $! >> consumers.pid
+python consumer_functions.py tweets &
+echo $! >> consumers.pid
