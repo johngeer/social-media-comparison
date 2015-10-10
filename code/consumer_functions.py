@@ -109,12 +109,6 @@ def is_user_lang_tweet(allow_lang_list, given_item):
 ## Parsing Functions
 def parse_tweet(given_dict):
     """Reorganize the resulting dictionary"""
-    def len_or_none(given_item):
-        """Return length, if it has one. Otherwise None"""
-        try: 
-            return len(given_item)
-        except:
-            return None
     def get_hashtag_string(given_item):
         """Return a string of hashtags associated with the given item"""
         ht = get_value_if_present_nested(given_item, ['entities', 'hashtags'])
@@ -145,9 +139,19 @@ def parse_post(given_dict): #TODO: test
     """Return parsed subset of a post object"""
     def get_tags(given_dict):
         return tz.pipe(
-            get_value_if_present_nested(given_dict, ['object', 'tags']),
-            tz.map(lambda x: tz.dissoc(x, 'url')), # remove url
-            json.dumps
+            get_value_if_present_nested(given_dict, ['object', 'tages']),
+            tz.filter(lambda x: tz.get_in(['objectType'], x, default=None) == 'tag'),
+            #TODO: use get_in_reordered, when it exists
+            tz.map(lambda x: tz.get_in(['displayName'], x, default=None)),
+            lambda x: ", ".join(x)
+        )
+    def get_categories(given_dict):
+        return tz.pipe(
+            get_value_if_present_nested(given_dict, ['object', 'tages']),
+            tz.filter(lambda x: tz.get_in(['objectType'], x, default=None) == 'category'),
+            #TODO: use get_in_reordered, when it exists
+            tz.map(lambda x: tz.get_in(['displayName'], x, default=None)),
+            lambda x: ", ".join(x)
         )
     gv = get_value_if_present_nested(given_dict)
     return {
@@ -156,7 +160,8 @@ def parse_post(given_dict): #TODO: test
         'displayName': gv(['displayName']),
         'permalinkUrl': gv(['object', 'permalinkUrl']),
         'summary': gv(['object', 'summary']),
-        # decided not to include the full content of the post
+        'content': gv(['object', 'content']),
+        'content_len': len_or_none(gv(['object', 'content'])),
         'tags': get_tags(given_dict),
         'actor_name': gv(['actor', 'displayName']),
         'actor_id': gv(['actor', 'id']),
@@ -197,18 +202,26 @@ def save_sqlite(db_engine, stream_iterator):
             print(num)
     return True
 def save_csv_gz(file_name, stream_iterator):
-    """Save the given stream to a compressed CSV file"""
-    file_name = file_name.replace( # ad timestamp, to prevent overwriting
+    """Save the given stream to a compressed CSV file
+    
+    This is presently designed to write the rows in chunks
+    rather than row by row. My thought was that if there was 
+    overhead to each write, this chunking would reduce the number 
+    of times the program needed to deal with that."""
+    file_name = file_name.replace( # add a timestamp, to prevent overwriting
         ".csv.gz", 
         "_{}.csv.gz".format(time.strftime("%Y-%m-%d_%I-%M-%S")))
     with gzip.open(file_name, "w") as f :
+        stored_stream = []
         for num, row in enumerate(stream_iterator):
             if num == 0:
                 writer = csv.DictWriter(f, fieldnames=row.keys())
                 writer.writeheader()
-            if (num % 2000) == 0:
-                print(num)
-            writer.writerow(row)
+            if (num % 1000) == 0:
+                writer.writerows(stored_stream) # save stored stream entries
+                stored_stream = []              # reset storage
+                print(num)                      # for feedback / debugging
+            stored_stream.append(row)
     return True
 
 ## Helper Functions
@@ -223,7 +236,14 @@ def get_value_if_present_nested(given_dict, key_list):
     """Like value_if_present but can handle nesting"""
     #TODO: replace with: 
     # tz.get_in(key_list, given_dict, default=None)
+    # rename function to: get_in_reordered
     return reduce(get_value_if_present, key_list, given_dict)
+def len_or_none(given_item):
+    """If it has one, return length, otherwise return None"""
+    try: 
+        return len(given_item)
+    except:
+        return None
 
 if __name__ == '__main__':
     connect_to_twitter_stream()
