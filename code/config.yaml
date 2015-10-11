@@ -1,0 +1,31 @@
+## Configuration settings for the WordPress.com and Twitter stream consumers
+
+# --- Where to Save ---
+# This entry defines the format that the stream should be saved to. 
+# It can presently be set to either 'sqlite' or 'csv_gz'
+endpoint: sqlite
+
+# --- Debug Mode ---
+# This entry defines the mode that the consumer should be run in. 
+# It can either be 'debug', which asks the script to save frequently and 
+# print extra information. I can also be set to 'production', in this mode
+# it is less verbose and users fewer, but larger, write operations.
+mode: debug
+
+# --- Stream URLs ---
+# This defines the URLS that it should watch when consuming the different
+# streams. Presently this only defines the WordPress.com streams, the Twitter
+# stream defaults to the standard public stream
+stream_urls: 
+    likes: 'http://xmpp.wordpress.com:8008/likes.json?type=text/plain'
+    posts: 'http://xmpp.wordpress.com:8008/posts.json?type=text/plain'
+    comments: 'http://xmpp.wordpress.com:8008/comments.json?type=text/plain'
+
+# --- Other Configuration ---
+# In order to connect to the Twitter stream, the script needs twitter
+# credentials. It looks for these in the environment variables: 
+#
+# TWITTER_ACCESS_TOKEN
+# TWITTER_ACCESS_SECRET
+# TWITTER_CONSUMER_KEY
+# TWITTER_CONSUMER_SECRET

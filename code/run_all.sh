@@ -3,11 +3,11 @@
 # For Development
 find . -name '*.pyc' -delete # remove compiled files
 
-python consumer_functions.py comments &
+nohup python consumer_functions.py comments &
 echo $! >> consumers.pid # save the pid's, to make it easier to stop them
-python consumer_functions.py posts &
+nohup python consumer_functions.py posts &
 echo $! >> consumers.pid
-python consumer_functions.py likes &
+nohup python consumer_functions.py likes &
 echo $! >> consumers.pid
-python consumer_functions.py tweets &
+nohup python consumer_functions.py tweets &
 echo $! >> consumers.pid

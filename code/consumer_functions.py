@@ -12,30 +12,24 @@ import time                  # for simple benchmarks
 import datetime as dt        # for converting the formats of timestamps
 import pdb                   # for testing
 import argparse              # for accepting command line arguments
+import yaml                  # for loading the configuration file
 # import sqlite3               # for interacting with SQLite databases
 
-## Accept arguments
+## Accept Arguments
 parser = argparse.ArgumentParser(description="Save a WordPress or Twitter stream")
 parser.add_argument('stream_key', metavar='stream_key', type=str, nargs=1, 
                     help='Which stream to consume (tweets, likes, posts, or comments)')
 STREAM_KEY = parser.parse_args().stream_key[0]
 
-## Configuration
-STREAM_URLS = {
-    "likes": 'http://xmpp.wordpress.com:8008/likes.json?type=text/plain',
-    "posts": 'http://xmpp.wordpress.com:8008/posts.json?type=text/plain',
-    "comments": 'http://xmpp.wordpress.com:8008/comments.json?type=text/plain'
-}
+## Load Configuration
+with open('config.yaml') as config_file:
+    CONFIG = yaml.load(config_file.read())
 TWITTER_CREDENTIALS = {
     "access_token": os.environ['TWITTER_ACCESS_TOKEN'],
     "access_token_secret": os.environ['TWITTER_ACCESS_SECRET'],
     "consumer_key": os.environ['TWITTER_CONSUMER_KEY'],
     "consumer_secret": os.environ['TWITTER_CONSUMER_SECRET']
 }
-# ENDPOINT = 'sqlite'
-ENDPOINT = 'csv_gz'
-MODE = 'debug' # makes it less efficient, but more debug-able
-# MODE = 'production'
 
 ## Primary Functions
 def main():
@@ -45,7 +39,7 @@ def main():
 
 def connect_to_stream(stream_key):
     """Connect to the appropriate stream"""
-    if ENDPOINT == 'sqlite':
+    if CONFIG['endpoint'] == 'sqlite':
         saveing_function = save_sqlite
     else:
         saveing_function = save_csv_gz
@@ -58,7 +52,7 @@ def connect_to_stream(stream_key):
 def connect_to_wordpress_stream(stream_key, saveing_function):
     """Connect & consume a WordPress event stream"""
     # Connect to Stream
-    r = requests.get(STREAM_URLS[stream_key], stream=True)
+    r = requests.get(CONFIG['stream_urls'][stream_key], stream=True)
     lines = r.iter_lines()
 
     # Filter and Parse
@@ -271,7 +265,7 @@ def save_sqlite(stream_key, stream_iterator):
     stored_stream = []
     for num, row in enumerate(stream_iterator):
         stored_stream.append(row)
-        if (num % save_size[MODE]) == 0 and num != 0: # occasionally save to disc
+        if (num % save_size[CONFIG['mode']]) == 0 and num != 0: # occasionally save to disc
             stored_frame = pd.DataFrame(stored_stream)
             stored_frame.to_sql('stream', db_engine, if_exists='append', index=False)
             stored_stream = []
@@ -295,7 +289,7 @@ def save_csv_gz(stream_key, stream_iterator):
             if num == 0:
                 writer = csv.DictWriter(f, fieldnames=row.keys())
                 writer.writeheader()
-            if (num % save_size[MODE]) == 0 and num != 0:
+            if (num % save_size[CONFIG['mode']]) == 0 and num != 0:
                 writer.writerows(stored_stream) # save stored stream entries
                 stored_stream = []              # reset storage
                 print_update(stream_key, num)   # feedback for debugging
