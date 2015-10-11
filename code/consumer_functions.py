@@ -173,6 +173,7 @@ def parse_tweet(given_dict):
 def parse_post(given_dict):
     """Return parsed subset of a post object"""
     def get_tags(given_dict):
+        """Return a string of the tags associated with a post"""
         return tz.pipe(
             tz.get_in(['object', 'tags'], given_dict, default = []),
             tz.filter(lambda x: tz.get_in(['objectType'], x, default=None) == 'tag'),
@@ -180,6 +181,7 @@ def parse_post(given_dict):
             lambda x: ", ".join(x)
         )
     def get_categories(given_dict):
+        """Return a string of the categories associated with a post"""
         return tz.pipe(
             tz.get_in(['object', 'tags'], given_dict, default = []),
             tz.filter(lambda x: tz.get_in(['objectType'], x, default=None) == 'category'),
@@ -195,7 +197,7 @@ def parse_post(given_dict):
         'permalinkUrl': gv(['object', 'permalinkUrl']),
         'summary': gv(['object', 'summary']),
         'content': gv(['object', 'content']), # includes some HTML markup
-        'content_len': len_or_none(gv(['object', 'content'])),
+        'content_len': len_or_none(gv(['object', 'content'])), # presently includes the HTML markup
         'tags': get_tags(given_dict),
         'categories': get_categories(given_dict),
         'actor_name': gv(['actor', 'displayName']),
@@ -207,7 +209,7 @@ def parse_comment(given_dict):
     gv = get_value_if_present_nested(given_dict)
     return {
         'verb': gv(['verb']),
-        'published': gv(['published']), # a date-time
+        'published': gv(['published']), # a date-time stamp
         'objectType': gv(['object', 'objectType']),
         'url': gv(['object', 'url']),
         'id': gv(['object', 'id']),
