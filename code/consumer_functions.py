@@ -34,13 +34,6 @@ TWITTER_CREDENTIALS = {
 ## Primary Functions
 def main():
     """Overall function to start it off"""
-
-    print(parse_tweet({'created_at': 'what the what', 'entities':{'hashtags': [{'text': 'first'}]}}))
-    print(parse_tweet({'created_at': 'what the what', 'entities':{'hashtags': ['first', 'second', 'third']}}))
-    print(parse_tweet({'created_at': 'what the what', 'entities':{'hashtags': [{'text': 'first'}, {'text': 'second'}]}}))
-    print(parse_tweet({'created_at': 10}))
-    pdb.set_trace()
-
     print("Starting a stream consumer for {}".format(STREAM_KEY))
     connect_to_stream(STREAM_KEY)
 
