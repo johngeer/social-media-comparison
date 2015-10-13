@@ -19,7 +19,7 @@ import yaml                  # for loading the configuration file
 parser = argparse.ArgumentParser(description="Save a WordPress or Twitter stream")
 parser.add_argument('stream_key', metavar='stream_key', type=str, nargs=1, 
                     help='Which stream to consume (tweets, likes, posts, or comments)')
-STREAM_KEY = parser.parse_args().stream_key[0]
+STREAM_KEY = tz.get_in([0], parser.parse_args().stream_key, default=None)
 
 ## Load Configuration
 with open('config.yaml') as config_file:
@@ -34,6 +34,11 @@ TWITTER_CREDENTIALS = {
 ## Primary Functions
 def main():
     """Overall function to start it off"""
+
+    with open("test_data/example_twitter.json", 'r') as f:
+        print(parse_tweet(json.loads(f.read())))
+    pdb.set_trace()
+
     print("Starting a stream consumer for {}".format(STREAM_KEY))
     connect_to_stream(STREAM_KEY)
 
@@ -337,7 +342,7 @@ def print_update(stream_key, num):
         num))
 
 def permissive_json_load(given_item):
-    """A version of json.load that returns an empty dictionary if
+    """A version of json.loads that returns an empty dictionary if
     the given_item can't be decoded"""
     try:
         return json.loads(given_item)
