@@ -1,3 +1,6 @@
+## These are some tests for the consumer functions
+## They can be run with pytest with the command `py.test test_consumers.py`
+
 import consumer_functions as cf
 import json
 
@@ -20,6 +23,25 @@ def test_parse_tweet():
             'is_reply': False, 
             'count_media': 1, 
             'is_retweet': True}
+
+    test1 = cf.parse_tweet({'created_at': 'what the what', 'entities':{'hashtags': [{'text': 'first'}]}})
+    assert test1['hashtags'] == 'first'
+    assert test1['created_at'] == 'what the what'
+
+    test2 = cf.parse_tweet({'entities':{'hashtags': ['first', 'second', 'third']}})
+    assert test2['hashtags'] == ''
+
+    test3 = cf.parse_tweet({'entities':{'hashtags': [{'text': 'first'}, {'text': 'second'}]}})
+    assert test3['hashtags'] == 'first, second'
+
+    test4 = cf.parse_tweet({'created_at': 10})
+    assert test4['created_at'] == "10"
+
+    test5 = cf.parse_tweet({'created_at': None})
+    assert test5['created_at'] == ""
+
+    test6 = cf.parse_tweet({})
+    assert test6['created_at'] == ""
 
 ## Tests of Helper Functions
 def test_get_value_if_present_nested():

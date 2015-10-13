@@ -35,8 +35,10 @@ TWITTER_CREDENTIALS = {
 def main():
     """Overall function to start it off"""
 
-    with open("test_data/example_twitter.json", 'r') as f:
-        print(parse_tweet(json.loads(f.read())))
+    print(parse_tweet({'created_at': 'what the what', 'entities':{'hashtags': [{'text': 'first'}]}}))
+    print(parse_tweet({'created_at': 'what the what', 'entities':{'hashtags': ['first', 'second', 'third']}}))
+    print(parse_tweet({'created_at': 'what the what', 'entities':{'hashtags': [{'text': 'first'}, {'text': 'second'}]}}))
+    print(parse_tweet({'created_at': 10}))
     pdb.set_trace()
 
     print("Starting a stream consumer for {}".format(STREAM_KEY))
@@ -142,22 +144,24 @@ def parse_tweet(given_dict):
     """Reorganize the resulting dictionary"""
     def get_hashtag_string(given_item):
         """Return a string of hashtags associated with the given item"""
-        ht = get_value_if_present_nested(given_item, ['entities', 'hashtags'])
-        if len(ht) > 0:
-            return ", ".join(
-                map(
-                    lambda x: get_value_if_present_nested(x, ['text']), 
-                    ht))
-        else:
-            return ''
+        return tz.pipe(
+            tz.get_in(['entities', 'hashtags'], given_item, default=[]),
+            tz.map(lambda x: tz.get_in(['text'], x, default=None)),
+            tz.filter(lambda x: x is not None),
+            lambda x: ", ".join(x))
     def reformat_timestamp(given_ts):
         """Reformat into WordPress.com format"""
         # Twitter example: "Sat Oct 10 14:48:34 +0000 2015"
         # WordPress example: "2015-10-10T19:42:34Z"
-        return tz.pipe(
-            given_ts,
-            lambda x: dt.datetime.strptime(x, "%a %b %d %H:%M:%S +0000 %Y"),
-            lambda x: x.strftime("%Y-%m-%dT%H:%M:%SZ"))
+        if given_ts is None:
+            return ""
+        try: 
+            return tz.pipe(
+                given_ts,
+                lambda x: dt.datetime.strptime(x, "%a %b %d %H:%M:%S +0000 %Y"),
+                lambda x: x.strftime("%Y-%m-%dT%H:%M:%SZ"))
+        except: # If it can't reformat it, just use the previous version
+            return str(given_ts)
     gv = get_value_if_present_nested(given_dict)
     return {
         'timestamp_ms': gv(['timestamp_ms']),
