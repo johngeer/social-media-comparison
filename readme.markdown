@@ -14,11 +14,11 @@ These stream consumers are designed to be called from separate jobs via the comm
 
 The script `code/run_all.sh` is provided to make it more convenient to collect all of the streams at once. To start all five of the consumers as separate background jobs one can call:
 
-    bash run_all.sh
+    bash -i run_all.sh
 
 This script will save the pid's of the jobs to a `code/consumers.pid` file. This makes it easier to find and stop them later. To make this a little easier, a shell script is also included that can stop all the jobs started by `run_all.sh`. To use this script to stop all the jobs, call:
 
-    bash stop_consumers.sh
+    bash -i stop_consumers.sh
 
 ##### Configuration
 

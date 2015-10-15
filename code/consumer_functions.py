@@ -298,13 +298,20 @@ def save_sqlite(stream_key, stream_iterator):
             'sqlite:///{}'.format(get_save_location(stream_key, '.sqlite')))
     save_size = {'debug':10, 'production': 1000}
     stored_stream = []
-    for num, row in enumerate(stream_iterator):
-        stored_stream.append(row)
-        if (num % save_size[CONFIG['mode']]) == 0 and num != 0: # occasionally save to disc
-            stored_frame = pd.DataFrame(stored_stream)
-            stored_frame.to_sql('stream', db_engine, if_exists='append', index=False)
-            stored_stream = []
-            log_update(stream_key, num)   # feedback for debugging
+    try: 
+        for num, row in enumerate(stream_iterator):
+            stored_stream.append(row)
+            if (num % save_size[CONFIG['mode']]) == 0 and num != 0: # occasionally save to disc
+                stored_frame = pd.DataFrame(stored_stream)
+                stored_frame.to_sql('stream', db_engine, if_exists='append', index=False)
+                stored_stream = []
+                log_update(stream_key, num)   # feedback for debugging
+    except KeyboardInterrupt:
+        # Save in-memory data when it receives a SIGINT
+        stored_frame = pd.DataFrame(stored_stream)
+        stored_frame.to_sql('stream', db_engine, if_exists='append', index=False)
+        log_update(stream_key, num)   # feedback for debugging
+            
     return True
 
 def save_csv_gz(stream_key, stream_iterator):
@@ -316,19 +323,25 @@ def save_csv_gz(stream_key, stream_iterator):
     of times the program needed to deal with that."""
     file_name = get_save_location(
         stream_key, 
-        "_{}.csv.gz".format(time.strftime("%Y-%m-%d_%I-%M-%S"))) # timestamp, to prevent overwriting
+        "_{}.csv.gz".format(time.strftime("%Y-%m-%d_%I-%M-%S"))) 
+        # timestamp, to prevent overwriting when starting a new file
     save_size = {'debug':10, 'production': 1000}
     with gzip.open(file_name, "w") as f :
         stored_stream = []
-        for num, row in enumerate(stream_iterator):
-            if num == 0:
-                writer = csv.DictWriter(f, fieldnames=row.keys())
-                writer.writeheader()
-            if (num % save_size[CONFIG['mode']]) == 0 and num != 0:
-                writer.writerows(stored_stream) # save stored stream entries
-                stored_stream = []              # reset storage
-                log_update(stream_key, num)   # feedback for debugging
-            stored_stream.append(row)
+        try: 
+            for num, row in enumerate(stream_iterator):
+                stored_stream.append(row)
+                if num == 0:
+                    writer = csv.DictWriter(f, fieldnames=row.keys())
+                    writer.writeheader()
+                if (num % save_size[CONFIG['mode']]) == 0 and num != 0:
+                    writer.writerows(stored_stream) # save stored stream entries
+                    stored_stream = []              # reset storage
+                    log_update(stream_key, num)     # feedback for debugging
+        except KeyboardInterrupt:
+            # Save in-memory data and close the file when it receives a SIGINT
+            writer.writerows(stored_stream) # save stored stream entries
+            log_update(stream_key, num)     # feedback for debugging
     return True
 
 def write_to_log(stream_key, what_to_write):
