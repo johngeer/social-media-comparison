@@ -11,3 +11,5 @@ nohup python consumer_functions.py likes &
 echo $! >> consumers.pid
 nohup python consumer_functions.py tweets &
 echo $! >> consumers.pid
+# nohup python consumer_functions.py filtered_tweets &
+# echo $! >> consumers.pid

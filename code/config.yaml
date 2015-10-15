@@ -3,7 +3,7 @@
 # --- Where to Save ---
 # This entry defines the format that the stream should be saved to. 
 # It can presently be set to either 'sqlite' or 'csv_gz'
-endpoint: sqlite
+endpoint: csv_gz
 
 # --- Debug Mode ---
 # This entry defines the mode that the consumer should be run in. 
@@ -11,6 +11,19 @@ endpoint: sqlite
 # print extra information. I can also be set to 'production', in this mode
 # it is less verbose and users fewer, but larger, write operations.
 mode: debug
+
+# --- Filtered Twitter Stream ---
+# The Twitter API can perform some pre-filtering on a larger sample of tweets
+# than is available through the public sample stream. This stream can be
+# filtered by 'track' (keywords), 'follow' (user IDS), and 'locations' 
+# (lat & long coordinates). The values set below will tell the script how to
+# filter the list. For more information, here is the Twitter documentation 
+# page:
+#
+# https://dev.twitter.com/streaming/reference/post/statuses/filter
+twitter_filter: 
+    track: "#WordPress"
+
 
 # --- Stream URLs ---
 # This defines the URLS that it should watch when consuming the different

@@ -39,64 +39,70 @@ def main():
 
 def connect_to_stream(stream_key):
     """Connect to the appropriate stream"""
+
+    # Set save function
     if CONFIG['endpoint'] == 'sqlite':
         saveing_function = save_sqlite
     else:
         saveing_function = save_csv_gz
-    if stream_key == "tweets":
+
+    # Pick which stream to save
+    if stream_key == "filtered_tweets":
+        connect_to_twitter_filtered_stream('filtered_tweets', saveing_function)
+    elif stream_key == "tweets":
         connect_to_twitter_stream('tweets', saveing_function)
     else: # WordPress
         connect_to_wordpress_stream(stream_key, saveing_function)
     return True
 
 def connect_to_wordpress_stream(stream_key, saveing_function):
-    """Connect & consume a WordPress event stream"""
-    # Connect to Stream
-    r = requests.get(CONFIG['stream_urls'][stream_key], stream=True)
-    lines = r.iter_lines()
-
-    # Filter and Parse
+    """Connect to & consume a WordPress event stream"""
     parse_functions = {
         'posts': parse_post,
         'likes': parse_like,
         'comments': parse_comment}
     stream = tz.pipe(
-        lines,
+        ## Connect
+        start_wordpress_stream(CONFIG['stream_urls'][stream_key]),
         ## Parse
         tz.map(permissive_json_load), # parse the JSON, or return an empty dictionary
-        tz.map(parse_functions[stream_key]), # returns a flat dictionary
+        tz.map(parse_functions[stream_key]), # parse into a flat dictionary
     )
 
     # Collect
     saveing_function(stream_key, stream)
 
-    return True
-
 def connect_to_twitter_stream(stream_key, saveing_function):
-    """Connect & consume a twitter stream"""
-    # Connect to Stream
-    auth = twitter.OAuth(
-        consumer_key=TWITTER_CREDENTIALS['consumer_key'],
-        consumer_secret=TWITTER_CREDENTIALS['consumer_secret'],
-        token=TWITTER_CREDENTIALS['access_token'],
-        token_secret=TWITTER_CREDENTIALS['access_token_secret']
-    )
-    twitter_public_stream = twitter.TwitterStream(auth=auth)
-
-    # Filter and Parse
-    twitter_stream = tz.pipe(
-        twitter_public_stream.statuses.sample(), # raw stream
+    """Connect to & consume a Twitter stream"""
+    stream = tz.pipe(
+        ## Connect
+        start_stream_twitter(), # public sampled stream
+        tz.map(print_twitter_stall_warning),
         ## Filter
         tz.filter(is_tweet), # filter to tweets
         # tz.filter(is_user_lang_tweet(["en", "en-AU", "en-au", "en-GB", "en-gb"])), # filter to English
         ## Parse
-        tz.map(parse_tweet), # parse into flat dictionary
+        tz.map(parse_tweet), # parse into a flat dictionary
     )
 
     # Collect
-    saveing_function(stream_key, twitter_stream)
+    saveing_function(stream_key, stream)
 
-    return True
+def connect_to_twitter_filtered_stream(stream_key, saveing_function):
+    """Connect to & consume a filtered Twitter stream, where Twitter does 
+    some of the filtering"""
+    stream = tz.pipe(
+        ## Connect
+        start_stream_twitter(**CONFIG['twitter_filter']),
+        tz.map(print_twitter_stall_warning),
+        ## Filter
+        tz.filter(is_tweet), # filter to tweets
+        ## Parse
+        tz.map(parse_tweet), # parse into a flat dictionary
+    )
+
+    ## Collect
+    saveing_function(stream_key, stream)
 
 ## Decorators
 def timed(func):
@@ -108,6 +114,31 @@ def timed(func):
         print("The {} function took {}".format(func.__name__, time.time() - start_time))
         return result
     return new_func
+
+## Connecting Functions
+def start_stream_twitter(**kargs):
+    """Return an iterator for the Twitter stream, if keywords 
+    are supplied it switches to a filtered Twitter stream"""
+    # May be able to set: 'track' (keywords), 'follow' (user IDS), and 
+    # 'locations' (lat&long coordinates), 
+    # https://dev.twitter.com/streaming/reference/post/statuses/filter
+    # https://github.com/sixohsix/twitter/blob/master/twitter/stream_example.py
+    auth = twitter.OAuth(
+        consumer_key=TWITTER_CREDENTIALS['consumer_key'],
+        consumer_secret=TWITTER_CREDENTIALS['consumer_secret'],
+        token=TWITTER_CREDENTIALS['access_token'],
+        token_secret=TWITTER_CREDENTIALS['access_token_secret']
+    )
+    twitter_public_stream = twitter.TwitterStream(auth=auth)
+    if len(kargs) > 0:
+        return twitter_public_stream.statuses.filter(**kargs)
+    else: 
+        return twitter_public_stream.statuses.sample()
+
+def start_wordpress_stream(stream_url):
+    """Return an iterator for any of the WordPress streams"""
+    r = requests.get(stream_url, stream=True)
+    return r.iter_lines()
 
 ## Filter Functions
 def is_tweet(given_item):
@@ -273,7 +304,7 @@ def save_sqlite(stream_key, stream_iterator):
             stored_frame = pd.DataFrame(stored_stream)
             stored_frame.to_sql('stream', db_engine, if_exists='append', index=False)
             stored_stream = []
-            print_update(stream_key, num)   # feedback for debugging
+            log_update(stream_key, num)   # feedback for debugging
     return True
 
 def save_csv_gz(stream_key, stream_iterator):
@@ -296,9 +327,14 @@ def save_csv_gz(stream_key, stream_iterator):
             if (num % save_size[CONFIG['mode']]) == 0 and num != 0:
                 writer.writerows(stored_stream) # save stored stream entries
                 stored_stream = []              # reset storage
-                print_update(stream_key, num)   # feedback for debugging
+                log_update(stream_key, num)   # feedback for debugging
             stored_stream.append(row)
     return True
+
+def write_to_log(stream_key, what_to_write):
+    """Save some output to a simple log"""
+    with open('../data/log_{}.txt'.format(stream_key), 'a') as log:
+        log.write(what_to_write)
 
 ## Helper Functions
 def get_value_if_present(given_dict, key_string):
@@ -327,16 +363,18 @@ def get_save_location(stream_key, file_ending):
     return "../data/{}_stream{}".format(stream_key, file_ending)
 
 def print_and_pass(given_item):
-    """A print function to peak in on streams"""
+    """A little function to peak in on streams"""
     print(given_item)
     return given_item
 
-def print_update(stream_key, num):
-    """Print a small update on how things are going"""
-    print("{} {} {}".format(
+def log_update(stream_key, num):
+    """Save a small update on how things are going"""
+    update = "{} {} {}".format(
         stream_key.ljust(8), 
         dt.datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"),
-        num))
+        num)
+    write_to_log(stream_key, update+"\n")
+    print(update)
 
 def permissive_json_load(given_item):
     """A version of json.loads that returns an empty dictionary if
@@ -345,6 +383,14 @@ def permissive_json_load(given_item):
         return json.loads(given_item)
     except:
         return {}
+
+def print_twitter_stall_warning(given_item):
+    """Print stall warnings, pass everything through"""
+    warning = tz.get_in(['warning'], given_item, default = None)
+    if warning is not None:
+        write_to_log(STREAM_KEY, warning)
+        print(warning) 
+    return(given_item)
 
 if __name__ == '__main__':
     main()

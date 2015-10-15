@@ -8,11 +8,11 @@ This code can connect to, parse, and save events from Twitter's public stream an
 
 ##### How to Start The Stream Consumers
 
-These stream consumers are designed to be called from separate jobs via the command line. They are called this way to reduce the likelihood that the consumers of the different streams will conflict with each other. To start an individual stream consumer, one calls the python script `code/consumer_functions.py` followed by the name of the stream it should save (tweets, likes, posts, or comments). So to save the likes stream, one would use the command: 
+These stream consumers are designed to be called from separate jobs via the command line. They are called this way to reduce the likelihood that the consumers of the different streams will conflict with each other. To start an individual stream consumer, one calls the python script `code/consumer_functions.py` followed by the name of the stream it should save (options include `tweets`, `filtered_tweets`, or WordPress `likes`, `posts`, or `comments`). So to save the likes stream, one would use the command: 
 
     python consumer_functions.py likes
 
-The script `code/run_all.sh` is provided to make it more convenient to collect all of the streams at once. To start all four of the consumers as separate background jobs one can call:
+The script `code/run_all.sh` is provided to make it more convenient to collect all of the streams at once. To start all five of the consumers as separate background jobs one can call:
 
     bash run_all.sh
 
@@ -22,7 +22,7 @@ This script will save the pid's of the jobs to a `code/consumers.pid` file. This
 
 ##### Configuration
 
-The script's behavior can be configured by editing the `code/config.yaml` file. This allows one to adjust the format in which the events are saved, how often it saves and prints updates, or the URLs for the WordPress.com streams.
+The script's behavior can be configured by editing the `code/config.yaml` file. This allows one to adjust the format in which the events are saved, how often it saves and prints updates, the URLs for the WordPress.com streams, or the filtering options for the Twitter stream.
 
 ##### Authentication
 
