@@ -2,13 +2,13 @@
 
 # --- Where to Save ---
 # This entry defines the format that the stream should be saved to. 
-# It can presently be set to either 'sqlite' or 'csv_gz'
+# It can presently be set to either 'sqlite' or 'csv_gz'.
 endpoint: csv_gz
 
 # --- Debug Mode ---
 # This entry defines the mode that the consumer should be run in. 
 # It can either be 'debug', which asks the script to save frequently and 
-# print extra information. I can also be set to 'production', in this mode
+# print extra information. It can also be set to 'production', in this mode
 # it is less verbose and users fewer, but larger, write operations.
 mode: debug
 
