@@ -1,4 +1,7 @@
 # source('model.R')
 source('functions.R')
 
-investigate_peaks(demdebate_df)
+save_as_png(
+    "plot_peaks.png",
+    c(5, 8.09),
+    k(investigate_peaks(demdebate_df)))

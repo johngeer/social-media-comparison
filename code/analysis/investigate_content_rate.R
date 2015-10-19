@@ -1,4 +1,7 @@
 # source('model.R')
 source('functions.R')
 
-investigate_content_rate(demdebate_df)
+save_as_png(
+    "plot_content_rate.png",
+    c(5, 8.09),
+    k(investigate_content_rate(demdebate_df)))
