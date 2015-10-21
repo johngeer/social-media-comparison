@@ -45,15 +45,10 @@ investigate_content_rate = function(rate_df){
     # Look into the rate at which events are published on the sample streams
     plot_df = trim_to_good_data(rate_df)
 
-    demdebate_times = c(
-        as.POSIXct("2015-10-14 00:30"), 
-        as.POSIXct("2015-10-14 03:00")) %>% as.numeric
     guess_time = as.POSIXct("2015-10-13 21:00") %>% as.numeric # event
-    # guess_time = as.POSIXct("2015-10-14 24:00") %>% as.numeric
 
     p = ggplot(plot_df, aes(x = minute, y = num_entries, colour = verb)) +
         geom_point(alpha = 0.2) +
-        # geom_vline(xintercept = demdebate_times, lty=2) +
         # geom_vline(xintercept = guess_time, lty=2) +
         # stat_smooth(method="loess", span=0.3, size=1, se=FALSE) +
         geom_line(stat="smooth",method = "loess", span=0.3, alpha = 1, colour="black") +
@@ -87,3 +82,50 @@ investigate_peaks = function(rate_df){
         scale_x_datetime(labels = date_format("%b %-d\n%-H:%M"))
     print(p)
 }
+
+investigate_debate_rate = function(rate_df){
+    plot_df = trim_to_good_data(rate_df) %>% 
+        filter(verb %>% as.character != "like")
+    demdebate_times = c(
+        as.POSIXct("2015-10-14 00:30"), 
+        as.POSIXct("2015-10-14 03:00")) %>% as.numeric
+
+    p = ggplot(plot_df, aes(x = minute, y = num_entries, colour = verb)) +
+        geom_point(alpha = 0.2) +
+        geom_vline(xintercept = demdebate_times, lty=2) +
+        geom_line(stat="smooth",method = "loess", span=0.2, alpha = 1, colour="black", se=TRUE) +
+        # stat_smooth(method="loess", span=0.3, size=1, se=TRUE) +
+        facet_wrap(~verb, ncol=1, scales='free_y') +
+        xlab("Time (UTC)") + 
+        ylab("Sampled Publications Per Minute") +
+        theme_tufte(base_size=15) +
+        theme(legend.position="none") +
+        scale_color_brewer(palette="Set2") +
+        scale_x_datetime(labels = date_format("%b %-d\n%-H:%M"))
+    print(p)
+}
+
+investigate_debate_rate_hourly = function(hourly_rate_df){
+    plot_df = trim_to_good_data(hourly_rate_df) %>% 
+        filter(verb %>% as.character != "like")
+    demdebate_times = c(
+        as.POSIXct("2015-10-14 00:30"), 
+        as.POSIXct("2015-10-14 03:00")) %>% as.numeric
+
+    p = ggplot(plot_df, aes(x = minute, y = num_entries, colour = verb)) +
+        geom_point(alpha = 0.8) +
+        geom_vline(xintercept = demdebate_times, lty=2) +
+        # geom_line(stat="smooth",method = "loess", span=0.2, alpha = 1, colour="black", se=TRUE) +
+        stat_smooth(method="loess", span=0.3, size=1, se=TRUE) +
+        facet_wrap(~verb, ncol=1, scales='free_y') +
+        xlab("Time (UTC)") + 
+        ylab("Sampled Publications Per Hour") +
+        theme_tufte(base_size=15) +
+        theme(legend.position="none") +
+        scale_color_brewer(palette="Set2") +
+        scale_x_datetime(labels = date_format("%b %-d\n%-H:%M"))
+    print(p)
+}
+
+# investigate_debate_rate(debate_count_df)
+investigate_debate_rate_hourly(debate_count_hourly_df)
