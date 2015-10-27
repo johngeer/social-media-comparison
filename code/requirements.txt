@@ -1,7 +1,9 @@
 beautifulsoup4==4.4.1
 Cython==0.23.4
 cytoolz==0.7.3
+Jinja2==2.8
 langdetect==1.0.5
+MarkupSafe==0.23
 nltk==3.1
 numexpr==2.4.4
 numpy==1.10.0.post2
