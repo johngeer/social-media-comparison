@@ -1,4 +1,4 @@
-# source('model.R')
+source('model.R')
 source('functions.R')
 
 save_as_png(

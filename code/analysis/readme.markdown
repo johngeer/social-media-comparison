@@ -4,7 +4,7 @@ This folder contains code to analyze the data saved from the streams.
 
 ### Structure
 
-The R scripts presently focus on the rate that events appears in the streams. The code is separated in to the different files as follows: 
+The R scripts presently focus on the rate that events appears in the streams. The code is separated into the different files as follows: 
 
 * `model.R`
     * Loading the data and does some initially tidying of it
@@ -12,7 +12,7 @@ The R scripts presently focus on the rate that events appears in the streams. Th
 * `functions.R`
     * Functions to perform specific types of analyses, as well as create visualizations.
 * Code to run specific analyses
-    * These are the other `*.R` files such as
+    * These are the `investigate_*.R` files such as
         * investigate_content_rate.R
         * investigate_debate_rate.R
         * ...
