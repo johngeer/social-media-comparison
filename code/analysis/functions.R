@@ -185,9 +185,9 @@ investigate_debate_anomalies = function(rate_df){
         as.POSIXct("2015-10-14 00:30"), 
         as.POSIXct("2015-10-14 03:00")) %>% as.numeric
     annotation_text = data.frame( # annotation
-        minute = as.POSIXct("2015-10-14 09:00"),
-        num_entries = 11,
-        verb = "comment",
+        minute = as.POSIXct("2015-10-14 12:00"),
+        num_entries = 7500,
+        verb = "tweet",
         Unusual = NA)
     p = ggplot(plot_df, aes(x=minute, y=num_entries, color=Unusual)) +
         facet_wrap(~verb, ncol=1, scales="free_y") +
@@ -196,6 +196,7 @@ investigate_debate_anomalies = function(rate_df){
         geom_line(stat="smooth",method = "loess", span=0.3, alpha = 1, colour="black", se=TRUE) +
         xlab("Time (UTC)") + 
         ylab("Sampled Publications Per Half Hour") +
+        ggtitle("Rate of Debate-Related Publications") +
         theme_tufte(base_size=15) +
         scale_color_manual(values=c("#1b9e77", "#d95f02"), na.value = "grey50") +
         scale_x_datetime(labels = date_format("%b %-d\n%-H:%M")) +

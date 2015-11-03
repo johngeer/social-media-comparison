@@ -1,66 +1,73 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
-    <title>Distinct Words</title>
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+        <title>Distinct Words</title>
 
-    <!-- Bootstrap -->
-    <link href="css/bootstrap.min.css" rel="stylesheet">
+        <!-- Bootstrap -->
+        <link href="css/bootstrap.min.css" rel="stylesheet">
+        <style type="text/css">
+            .debate_time {background-color: #DDE4E9;}
+            .highlight {background-color: yellow}
+        </style>
 
-    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
-    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
-    <!--[if lt IE 9]>
-      <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
-      <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
-    <![endif]-->
-  </head>
-  <body>
-    <div class="container">
-        <div class="row"> 
-            <div class="col-sm-12"> 
-                <h1>Distinct Words</h1>
-            </div>
-        </div>
-        <div class="row">
-            <div class="col-sm-6">
-                <p>Short Explanation of what this is</p>
-            </div>
-            <div class="col-sm-6">
-                <p>Short explanation of the layout</p>
-            </div>
-        </div>
-        <div class="row">
-            <div class="col-sm-12"> 
-            </div>
-        </div>
-        <div class="row">
-            <div class="col-sm-4"><h3>Tweets</h3></div>
-            <div class="col-sm-4"><h3>WordPress.com Comments</h3></div>
-            <div class="col-sm-4"><h3>WordPress.com Posts</h3></div>
-        </div>
-        {% for entry in distinct_words %}
-            <div class="row">
-                <h4>{{entry['date_range']}}</h4>
+        <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+        <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+        <!--[if lt IE 9]>
+            <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+            <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+        <![endif]-->
+    </head>
+    <body>
+        <div class="container">
+            <div class="row"> 
+                <div class="col-sm-12"> 
+                    <h1>Distinct Words</h1>
+                </div>
             </div>
             <div class="row">
-                <div class="col-sm-4">
-                    <p>{{ entry['tweets_debate'] }}</p>
+                <div class="col-sm-6">
+                    <p>Short Explanation of what this is</p>
                 </div>
-                <div class="col-sm-4">
-                    <p>{{ entry['comments_debate']}}</p>
-                </div>
-                <div class="col-sm-4">
-                    <p>{{ entry['posts_debate'] }}</p>
+                <div class="col-sm-6">
+                    <p>Short explanation of the layout</p>
                 </div>
             </div>
-        {% endfor %}
-    </div>
-    <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
-    <!-- Include all compiled plugins (below), or include individual files as needed -->
-    <script src="js/bootstrap.min.js"></script>
-  </body>
+            <div class="row">
+                <div class="col-sm-12"> 
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-sm-4"><h3>Tweets</h3></div>
+                <div class="col-sm-4"><h3>WordPress.com Comments</h3></div>
+                <div class="col-sm-4"><h3>WordPress.com Posts</h3></div>
+            </div>
+            {% for entry in distinct_words %}
+                <div class="row">
+                    <div class="col-sm-12"> 
+                        <h4>{{entry['date_range']}}</h4>
+                    </div>
+                </div>
+                <div class="row distinct_words">
+                    <div class="col-sm-4 tweets">
+                        <p>{{ entry['tweets_debate'] }}</p>
+                    </div>
+                    <div class="col-sm-4 comments">
+                        <p>{{ entry['comments_debate']}}</p>
+                    </div>
+                    <div class="col-sm-4 posts">
+                        <p>{{ entry['posts_debate'] }}</p>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+        <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+        <!-- Include all compiled plugins (below), or include individual files as needed -->
+        <script src="js/bootstrap.min.js"></script>
+        <script src="js/jquery.highlight-5.js"></script>
+    </body>
 </html>

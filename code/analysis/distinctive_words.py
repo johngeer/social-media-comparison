@@ -138,6 +138,7 @@ def save_as_html(distinct_words, file_name):
             return tz.pipe(
                 given_values,
                 tz.map(lambda x: x['token']),
+                tz.map(wrap_in_highlight_link), # wrap in link to highlight words
                 tz.reduce(lambda x,y: u"{}, {}".format(x, y)))
         # return empty string for empty lists
         elif isinstance(given_values, list) and len(given_values) == 0:
@@ -155,6 +156,10 @@ def save_as_html(distinct_words, file_name):
         return "{} to {} UTC".format(
             date_range[0].strftime("%Y-%m-%d %H:%M"),
             date_range[1].strftime("%H:%M"))
+    def wrap_in_highlight_link(given_string):
+        """return the given string wrapped in the html code to highlight 
+        other occurances of that same word"""
+        return u"""<a href="javascript:void($('.distinct_words').removeHighlight().highlight('{string}'));">{string}</a>""".format(string=given_string)
     formated_distinct_words = tz.pipe(
         distinct_words,
         tz.map(
@@ -241,7 +246,7 @@ def parse_content_into_count(max_num_words, allowed_parts_of_speech, list_of_con
         tokenize_func = tokenize_and_filter_perc_func(allowed_parts_of_speech)
     wordnet_lemmatizer = nltk.stem.WordNetLemmatizer()
     lemma_fun = lambda x: wordnet_lemmatizer.lemmatize(x)
-    exclusion_list = ['//platform.twitter.com/widgets.js', 'align=', 'aligncenter', 'id=', 'width=', '/caption', 'pdf.pdf']
+    exclusion_list = ['//platform.twitter.com/widgets.js', 'align=', 'aligncenter', 'id=', 'width=', '/caption', 'pdf.pdf', u'//t.c\xe2rt', 'http']
         # Yeah, this is a bit of a hack
     return tz.pipe(
         list_of_content, # given content
@@ -315,6 +320,7 @@ def get_posterior_probs_freq(num_words, all_streams_count_dict, this_stream_coun
                 this_stream_count_dict,
                 x[0])}),
         lambda x: sorted(x, key=lambda y: -y['posterior']))
+
 
 def print_and_pass(x):
     """Simple function for peaking into data pipelines"""

@@ -10,7 +10,7 @@ endpoint: csv_gz
 # It can either be 'debug', which asks the script to save frequently and 
 # print extra information. It can also be set to 'production', in this mode
 # it is less verbose and users fewer, but larger, write operations.
-mode: debug
+mode: production
 
 # --- Filtered Twitter Stream ---
 # The Twitter API can perform some pre-filtering on a larger sample of tweets
