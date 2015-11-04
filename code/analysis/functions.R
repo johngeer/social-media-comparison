@@ -6,7 +6,7 @@
 library(dplyr)    # for data wrangling
 library(ggplot2)  # for plotting
 library(ggthemes) # for plot formatting
-library(scales)   # for date formating
+library(scales)   # for date formatting
 library(forecast) # for fitting time series models
 
 ## Investigation functions
@@ -204,6 +204,74 @@ investigate_debate_anomalies = function(rate_df){
     print(p)
 }
 
+investigate_publication_decay = function(rate_df){
+    ## Compare the rate that publications drop off in the different streams
+    trim_to_after_debate = function(rate_df){
+        ## Limit the rate dataframe to measurements after the debate
+        rate_df %>%
+            filter(minute >= as.POSIXct("2015-10-14 10:00")) %>% 
+            filter(minute < as.POSIXct("2015-10-15 10:00"))
+            # I chose these dates because they include a complete day, and 
+            # are in all of the series. The idea of using a complete day is 
+            # an attempt to prevent the daily periodicity from biasing the 
+            # models.
+    }
+    fit_exponential_decay_model = function(focused_df, verb_name){
+        ## Fit an exponential decay model to the after debate data
+
+        # Prepare data
+        focused_df = focused_df %>% 
+            filter(verb %>% as.character == verb_name) %>% # limit to a stream
+            mutate(num_entries = ifelse(num_entries == 0, NA, num_entries)) # hack to prevent log problems
+
+        # Fit model
+        model = glm(log(num_entries) ~ hour, data = focused_df)
+
+        # Check the fit
+        # print(summary(model)) # check 
+        # plot(model) 
+
+        # Calculate the half-life of the model
+        hl = log(2)/(-1 * model$coefficients[2]) 
+        sprintf("The half life of this model is %s", hl) %>% print
+
+        # Return data
+        rbind(
+            focused_df %>% 
+                mutate(fit = rep(FALSE, n())), 
+            focused_df %>% 
+                ungroup %>% 
+                mutate(
+                    fit = rep(TRUE, n()),
+                    # verb = sprintf("%s_fit", as.character(verb)),
+                    num_entries = predict(model, newdata=focused_df) %>% exp))
+    }
+
+    # Trim data to after the debate
+    trimmed_df = rate_df %>% 
+        trim_to_good_data %>% 
+        trim_to_after_debate %>% 
+        mutate(hour = (minute %>% as.numeric)/60**2) # add in hourly variable, for half-life
+
+    # Fit models
+    fit_df = rbind(
+        fit_exponential_decay_model(trimmed_df, "tweet"),
+        fit_exponential_decay_model(trimmed_df, "comment"),
+        fit_exponential_decay_model(trimmed_df, "post"))
+
+    # Plot
+    p = ggplot(fit_df, aes(x = minute, y = num_entries, color = fit)) + 
+        facet_wrap(~verb, ncol=1, scales="free_y") +
+        geom_point() +
+        xlab("Time (UTC)") + 
+        ylab("Sampled Publications Per Half Hour") +
+        ggtitle("Decay of Debate-Related Publications") +
+        theme_tufte(base_size=15) +
+        scale_color_brewer(palette="Set2") +
+        scale_x_datetime(labels = date_format("%b %-d\n%-H:%M"))
+    print(p)
+}
+
 ## Helper functions
 ### These functions perform specific tasks, and are often reused
 ### across the investigations and model building.
@@ -250,6 +318,7 @@ prep_ts = function(rate_df, verb_name, given_freq){
         arrange(minute)
     ts(model_df$num_entries, freq=given_freq)
 }
+identity = function(x) { x }
 
 ## Model fitting
 ### These are functions that perform one-time investigations. Once 
