@@ -204,13 +204,14 @@ investigate_debate_anomalies = function(rate_df){
     print(p)
 }
 
-investigate_publication_decay = function(rate_df){
+investigate_publication_decay = function(rate_df, perc_diff_df=FALSE){
     ## Compare the rate that publications drop off in the different streams
     trim_to_after_debate = function(rate_df){
         ## Limit the rate dataframe to measurements after the debate
         rate_df %>%
-            filter(minute >= as.POSIXct("2015-10-14 10:00")) %>% 
-            filter(minute < as.POSIXct("2015-10-15 10:00"))
+            # 7 - 13
+            filter(minute >= as.POSIXct("2015-10-14 07:00")) %>% 
+            filter(minute < as.POSIXct("2015-10-15 13:00"))
             # I chose these dates because they include a complete day, and 
             # are in all of the series. The idea of using a complete day is 
             # an attempt to prevent the daily periodicity from biasing the 
@@ -246,12 +247,31 @@ investigate_publication_decay = function(rate_df){
                     # verb = sprintf("%s_fit", as.character(verb)),
                     num_entries = predict(model, newdata=focused_df) %>% exp))
     }
+    compensate_for_periodicity = function(rate_df, perc_diff_df){
+        # use the perc_diff column in the perc_diff_df to adjust the rate_df
 
-    # Trim data to after the debate
+        adjusting_df = perc_diff_df %>%
+            select(verb, minute, perc_diff) # limit to the relvant columns
+
+        rate_df %>% 
+            left_join(adjusting_df, by=c("verb", "minute")) %>% 
+            mutate(
+                num_entries_raw = num_entries, # save raw stream
+                # include the opposite percentage movement to what we see in the 
+                # overall stream
+                num_entries = ((-1 * perc_diff) + 1) * num_entries_raw) %>%
+            identity
+    }
+
+    # Prepair data
     trimmed_df = rate_df %>% 
-        trim_to_good_data %>% 
+        trim_to_good_data %>%  # trim to the appropriate time frame
         trim_to_after_debate %>% 
         mutate(hour = (minute %>% as.numeric)/60**2) # add in hourly variable, for half-life
+    if (is.data.frame(perc_diff_df)) {
+        # adjust for periodicity, if we have that data
+        trimmed_df = compensate_for_periodicity(trimmed_df, perc_diff_df)
+    }
 
     # Fit models
     fit_df = rbind(
@@ -319,6 +339,17 @@ prep_ts = function(rate_df, verb_name, given_freq){
     ts(model_df$num_entries, freq=given_freq)
 }
 identity = function(x) { x }
+get_percent_diff = function(rate_df){
+    # Return the percentage above or below the mean each stream is
+    add_percent_diff = function(filtered_df) {
+        # return a new df with the percentage different variable added
+        filtered_df %>% 
+            mutate(perc_diff = (num_entries - mean(num_entries))/mean(num_entries))
+    }
+    rate_df %>% 
+        group_by(verb) %>% 
+        do(add_percent_diff(.))
+}
 
 ## Model fitting
 ### These are functions that perform one-time investigations. Once 
